@@ -40,6 +40,9 @@ public class InitialData {
         query.append("CREATE TABLE IF NOT EXISTS ").append(DATABASEQUERY_DATA).append(".sale ( ");
         query.append("id UUID NOT NULL, ");
         query.append("value NUMERIC(19,4) NOT NULL, ");
+        query.append("status VARCHAR(50) NOT NULL, ");
+        query.append("quantity_items NUMERIC(19), ");
+        query.append("date TIMESTAMP NOT NULL, ");
         query.append("client UUID, ");
         query.append("CONSTRAINT pk_sale_id PRIMARY KEY (id), ");
         query.append("CONSTRAINT fk_sale_client FOREIGN KEY (client) REFERENCES ").append(DATABASEQUERY_DATA).append(".client ");
@@ -64,11 +67,11 @@ public class InitialData {
                 .append(";");
 
         query.append("INSERT INTO ")
-                .append(DATABASEQUERY_DATA).append(".sale (id, value, client) VALUES")
-                .append(" ('5ea8fae2-ed57-4928-b49f-887e0b5bb3db', 50, '8d414d37-f050-479a-bbaf-e07836214ef8'),")
-                .append(" ('698aedae-be8d-422a-ad8e-152c517d71f6', 25.28, '8d414d37-f050-479a-bbaf-e07836214ef8'),")
-                .append(" ('cc5a1a2b-1cda-43d4-843f-8998caf7e856', 10, 'e02b638b-26c5-4ffe-819a-99e858d7fad2'),")
-                .append(" ('3932399b-1fb9-4bde-ae08-1dd3f0721a3c', 5, null)")
+                .append(DATABASEQUERY_DATA).append(".sale (id, value, status, quantity_items, date, client) VALUES")
+                .append(" ('5ea8fae2-ed57-4928-b49f-887e0b5bb3db', 50, 'RUNNING', 2, now(), '8d414d37-f050-479a-bbaf-e07836214ef8'),")
+                .append(" ('698aedae-be8d-422a-ad8e-152c517d71f6', 25.28, 'RUNNING', 1, now(), '8d414d37-f050-479a-bbaf-e07836214ef8'),")
+                .append(" ('cc5a1a2b-1cda-43d4-843f-8998caf7e856', 10, 'FINISHED', 1, now(), 'e02b638b-26c5-4ffe-819a-99e858d7fad2'),")
+                .append(" ('3932399b-1fb9-4bde-ae08-1dd3f0721a3c', 5, 'FINISHED', 1, now(), null)")
                 .append(";");
 
         query.append("INSERT INTO ")

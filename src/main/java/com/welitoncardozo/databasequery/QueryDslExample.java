@@ -2,7 +2,13 @@ package com.welitoncardozo.databasequery;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.jpa.JPAExpressions;
+import com.querydsl.jpa.hibernate.HibernateQueryFactory;
+import com.querydsl.jpa.impl.JPADeleteClause;
+import com.querydsl.jpa.impl.JPAInsertClause;
+import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.querydsl.jpa.impl.JPAUpdateClause;
 import com.welitoncardozo.databasequery.dto.SaleClientDto;
 import com.welitoncardozo.databasequery.dto.SaleDto;
 import com.welitoncardozo.databasequery.dto.SaleDtoSimple;
@@ -10,26 +16,33 @@ import com.welitoncardozo.databasequery.dto.SaleItemMaxDto;
 import com.welitoncardozo.databasequery.entities.QClient;
 import com.welitoncardozo.databasequery.entities.QSale;
 import com.welitoncardozo.databasequery.entities.QSaleItem;
+import com.welitoncardozo.databasequery.entities.Sale;
 import com.welitoncardozo.databasequery.repositories.SaleRepository;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static java.util.UUID.fromString;
 import static java.util.stream.Collectors.toList;
 
 @Service
 @Transactional(readOnly = true)
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class QueryDslExample {
     private static final QSale SALE = QSale.sale;
     private static final QSaleItem SALE_ITEM = QSaleItem.saleItem;
     private static final QClient CLIENT = QClient.client;
 
-    private final EntityManager em;
+    @PersistenceContext
+    private EntityManager em;
+
     private final SaleRepository saleRepository;
 
     public void findAllSaleSimple() {
@@ -204,5 +217,118 @@ public class QueryDslExample {
             });
             System.out.println("------------");
         });
+    }
+
+    public void factories() {
+        final var jpaQueryFactory = new JPAQueryFactory(em).selectFrom(SALE).fetch();
+        System.out.printf("jpaQueryFactory: %s%n", jpaQueryFactory.size());
+
+        final var jpaQuery = new JPAQuery<>(em).select(SALE).from(SALE).fetch();
+        System.out.printf("jpaQuery: %s%n", jpaQuery.size());
+
+        final var hibernateQueryFactory = new HibernateQueryFactory(em.unwrap(Session.class)).selectFrom(SALE).fetch();
+        System.out.printf("hibernateQueryFactory: %s%n", hibernateQueryFactory.size());
+    }
+
+    public void selectOneOrFirst() {
+        final var selectFirst = new JPAQueryFactory(em)
+                .selectFrom(SALE)
+                .fetchFirst();
+        System.out.printf("selectFirst: %s%n", Optional.ofNullable(selectFirst).map(Sale::getId).map(UUID::toString).orElse("Não encontrado"));
+
+        final var selectOne = new JPAQueryFactory(em)
+                .selectFrom(SALE)
+                .where(SALE.id.eq(UUID.fromString("698aedae-be8d-422a-ad8e-152c517d71f6")))
+                .fetchOne();
+        System.out.printf("selectOne: %s%n", Optional.ofNullable(selectOne).map(Sale::getId).map(UUID::toString).orElse("Não encontrado"));
+    }
+
+    public void selectSomeResult() {
+        final var selectOneResult = new JPAQueryFactory(em)
+                .selectOne()
+                .from(SALE)
+                .fetchFirst();
+        System.out.printf("selectOneResult: %s. exits: %s%n", selectOneResult, selectOneResult != null);
+
+        final var selectOneResultEmpty = new JPAQueryFactory(em)
+                .selectOne()
+                .from(SALE)
+                .where(SALE.id.eq(UUID.fromString("00000000-0000-0000-0000-000000000000")))
+                .fetchFirst();
+        System.out.printf("selectOneResultEmpty: %s. exits: %s%n", selectOneResultEmpty, selectOneResultEmpty != null);
+
+        final var selectZeroResult = new JPAQueryFactory(em)
+                .selectZero()
+                .from(SALE)
+                .fetchFirst();
+        System.out.printf("selectZeroResult: %s. exits: %s%n", selectZeroResult, selectZeroResult != null);
+
+        final var selectZeroResultEmpty = new JPAQueryFactory(em)
+                .selectZero()
+                .from(SALE)
+                .where(SALE.id.eq(UUID.fromString("00000000-0000-0000-0000-000000000000")))
+                .fetchFirst();
+        System.out.printf("selectZeroResultEmpty: %s. exits: %s%n", selectZeroResultEmpty, selectZeroResultEmpty != null);
+    }
+
+    public void selectSubselect() {
+        final var selectSubselect = new JPAQueryFactory(em)
+                .selectFrom(SALE)
+                .where(SALE.date.in(
+                                JPAExpressions.select(SALE.date.max())
+                                        .from(SALE)
+                                        .groupBy(SALE.status)
+                ))
+                .fetch();
+        System.out.printf("selectSubselect: %s%n", selectSubselect.size());
+    }
+
+    @Transactional
+    public void insert() {
+        final var insertJpaQueryFactory = new JPAQueryFactory(em)
+                .insert(SALE)
+                .columns(SALE.id, SALE.value)
+                .values(UUID.randomUUID(), 90)
+//                .set(SALE.id, UUID.randomUUID())
+//                .set(SALE.value, 90D)
+//                .select(JPAExpressions.select(Expressions.constant(UUID.randomUUID()), Expressions.constant(190D)))
+                .execute();
+        System.out.printf("insertJpaQueryFactory: %s%n", insertJpaQueryFactory);
+
+        final var insertJpaInsertClause = new JPAInsertClause(em, SALE)
+                .columns(SALE.id, SALE.value)
+                .values(UUID.randomUUID(), 95)
+                .execute();
+        System.out.printf("insertJpaInsertClause: %s%n", insertJpaInsertClause);
+    }
+
+    @Transactional
+    public void update() {
+        final var updateJpaQueryFactory = new JPAQueryFactory(em)
+                .update(SALE)
+                .set(SALE.value, 2D)
+                .where(SALE.id.eq(UUID.fromString("5ea8fae2-ed57-4928-b49f-887e0b5bb3db")))
+                .execute();
+        System.out.printf("updateJpaQueryFactory: %s%n", updateJpaQueryFactory);
+
+        final var updateJpaUpdateClause = new JPAUpdateClause(em, SALE)
+                .set(SALE.value, 3D)
+                .where(SALE.id.eq(UUID.fromString("3932399b-1fb9-4bde-ae08-1dd3f0721a3c")))
+                .execute();
+        System.out.printf("updateJpaUpdateClause: %s%n", updateJpaUpdateClause);
+    }
+
+    @Transactional
+    public void delete() {
+        final var deleteJpaQueryFactory = new JPAQueryFactory(em)
+                .delete(SALE)
+                .where(SALE.id.eq(UUID.fromString("3932399b-1fb9-4bde-ae08-1dd3f0721a31")))
+                .execute();
+        System.out.printf("deleteJpaQueryFactory: %s%n", deleteJpaQueryFactory);
+
+        final var deleteJpaUpdateClause = new JPADeleteClause(em, SALE)
+                .where(SALE.id.eq(UUID.fromString("3932399b-1fb9-4bde-ae08-1dd3f0721a32")))
+                .execute();
+        System.out.printf("deleteJpaUpdateClause: %s%n", deleteJpaUpdateClause);
     }
 }

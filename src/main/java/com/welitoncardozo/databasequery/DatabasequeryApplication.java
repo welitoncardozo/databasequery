@@ -28,13 +28,20 @@ public class DatabasequeryApplication {
 //            initialData.create();
 
             queryDslExample.findAllSaleSimple();
-            queryDslExample.findAllSale();
-            queryDslExample.join();
-            queryDslExample.projection();
-            queryDslExample.group();
-            queryDslExample.filter();
-            queryDslExample.findWithItens();
-            queryDslExample.findWithItensToDto();
+//            queryDslExample.findAllSale();
+//            queryDslExample.join();
+//            queryDslExample.projection();
+//            queryDslExample.group();
+//            queryDslExample.filter();
+//            queryDslExample.findWithItens();
+//            queryDslExample.findWithItensToDto();
+//            queryDslExample.factories();
+//            queryDslExample.selectOneOrFirst();
+//            queryDslExample.selectSomeResult();
+//            queryDslExample.selectSubselect();
+//            queryDslExample.insert();
+//            queryDslExample.update();
+//            queryDslExample.delete();
         }
     }
 }
